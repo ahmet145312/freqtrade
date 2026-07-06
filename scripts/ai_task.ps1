@@ -41,6 +41,7 @@ $detected = New-Object System.Collections.Generic.List[string]
 $notes = New-Object System.Collections.Generic.List[string]
 $inputs = New-Object System.Collections.Generic.List[string]
 $generatedFiles = New-Object System.Collections.Generic.List[string]
+$fileSummaries = New-Object System.Collections.Generic.List[string]
 
 $urlMatches = [regex]::Matches($taskText, "https?://\S+")
 foreach ($m in $urlMatches) {
@@ -254,8 +255,6 @@ foreach ($youtubeUrl in $youtubeUrls) {
     $notes.Add("YouTube hazırlık sırasında hata: $($_.Exception.Message)") | Out-Null
   }
 }
-
-$fileSummaries = New-Object System.Collections.Generic.List[string]
 
 # Yerel tek dosya otomatik hazırlık
 $fileIndex = 0
