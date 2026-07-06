@@ -128,6 +128,9 @@ foreach ($youtubeUrl in $youtubeUrls) {
 
 $fileSummaries = New-Object System.Collections.Generic.List[string]
 
+# Yerel tek dosya otomatik hazırlık
+$fileIndex = 0
+
 foreach ($inputItem in $inputs) {
   if ($inputItem -match "^https?://") {
     continue
@@ -138,50 +141,78 @@ foreach ($inputItem in $inputs) {
   }
 
   $item = Get-Item $inputItem
-  $ext = $item.Extension.ToLowerInvariant()
 
-  switch ($ext) {
-    ".pdf"  { $detected.Add("pdf") | Out-Null }
-    ".csv"  { $detected.Add("csv") | Out-Null }
-    ".xlsx" { $detected.Add("excel") | Out-Null }
-    ".xls"  { $detected.Add("excel") | Out-Null }
-    ".txt"  { $detected.Add("text") | Out-Null }
-    ".md"   { $detected.Add("markdown") | Out-Null }
-    ".log"  { $detected.Add("log") | Out-Null }
-    ".json" { $detected.Add("json") | Out-Null }
-    ".py"   { $detected.Add("code") | Out-Null }
-    ".ps1"  { $detected.Add("code") | Out-Null }
-    ".png"  { $detected.Add("image") | Out-Null }
-    ".jpg"  { $detected.Add("image") | Out-Null }
-    ".jpeg" { $detected.Add("image") | Out-Null }
-    ".webp" { $detected.Add("image") | Out-Null }
-    ".mp4"  { $detected.Add("video_file") | Out-Null }
-    ".mov"  { $detected.Add("video_file") | Out-Null }
-    ".mkv"  { $detected.Add("video_file") | Out-Null }
-    default { $detected.Add("file") | Out-Null }
+  if ($item.PSIsContainer) {
+    continue
   }
 
-  $summary = @"
-Dosya: $($item.FullName)
-Boyut: $($item.Length) byte
-Uzantı: $ext
-Son değişiklik: $($item.LastWriteTime)
-"@
+  $fileIndex += 1
+  $safeBase = [regex]::Replace($item.BaseName, '[^\w\.-]+', '_')
+  if ($safeBase.Length -gt 60) {
+    $safeBase = $safeBase.Substring(0, 60)
+  }
+  if ([string]::IsNullOrWhiteSpace($safeBase)) {
+    $safeBase = "file"
+  }
 
-  if ($ext -in @(".txt", ".md", ".csv", ".log", ".json", ".py", ".ps1")) {
-    try {
-      $sample = Get-Content $item.FullName -TotalCount 80 -ErrorAction Stop | Out-String
-      $samplePath = Join-Path $runDir ("sample_" + $item.BaseName + ".txt")
-      $sample | Set-Content -Path $samplePath -Encoding UTF8
-      $summary += "`nÖrnek içerik dosyası: $samplePath`n"
-    } catch {
-      $summary += "`nÖrnek içerik okunamadı: $($_.Exception.Message)`n"
+  $localRoot = Join-Path $runDir "local_files"
+  $localDir = Join-Path $localRoot ("file_{0:D3}_{1}" -f $fileIndex, $safeBase)
+  New-Item -ItemType Directory -Force -Path $localDir | Out-Null
+
+  $notes.Add("Yerel dosya algılandı. collect_local_file ile hazırlanıyor: $($item.FullName)") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_local_file.ps1" -File $item.FullName -OutDir $localDir
+
+    $summaryPath = Join-Path $localDir "file_summary.md"
+    if (Test-Path $summaryPath) {
+      $summary = Get-Content -Path $summaryPath -Raw
+      $fileSummaries.Add($summary) | Out-Null
+
+      if (-not $generatedFiles.Contains($summaryPath)) {
+        $generatedFiles.Add($summaryPath) | Out-Null
+      }
     }
+
+    Get-ChildItem -Path $localDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+      if (-not $generatedFiles.Contains($_.FullName)) {
+        $generatedFiles.Add($_.FullName) | Out-Null
+      }
+    }
+
+    if (-not $generatedFiles.Contains($localDir)) {
+      $generatedFiles.Add($localDir) | Out-Null
+    }
+
+    $ext = $item.Extension.ToLowerInvariant()
+
+    switch ($ext) {
+      ".pdf"  { $detected.Add("pdf") | Out-Null }
+      ".csv"  { $detected.Add("csv") | Out-Null }
+      ".xlsx" { $detected.Add("excel") | Out-Null }
+      ".xls"  { $detected.Add("excel") | Out-Null }
+      ".txt"  { $detected.Add("text_file") | Out-Null }
+      ".md"   { $detected.Add("text_file") | Out-Null }
+      ".log"  { $detected.Add("text_file") | Out-Null }
+      ".json" { $detected.Add("json_file") | Out-Null }
+      ".py"   { $detected.Add("code") | Out-Null }
+      ".ps1"  { $detected.Add("code") | Out-Null }
+      ".yml"  { $detected.Add("code") | Out-Null }
+      ".yaml" { $detected.Add("code") | Out-Null }
+      ".png"  { $detected.Add("image") | Out-Null }
+      ".jpg"  { $detected.Add("image") | Out-Null }
+      ".jpeg" { $detected.Add("image") | Out-Null }
+      ".webp" { $detected.Add("image") | Out-Null }
+      ".mp4"  { $detected.Add("video_file") | Out-Null }
+      ".mov"  { $detected.Add("video_file") | Out-Null }
+      ".mkv"  { $detected.Add("video_file") | Out-Null }
+      default { $detected.Add("local_file") | Out-Null }
+    }
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Yerel dosya hazırlık hatası: $($item.FullName) - $errMsg") | Out-Null
   }
-
-  $fileSummaries.Add($summary) | Out-Null
 }
-
 if ($detected.Count -eq 0) {
   $detected.Add("plain_task") | Out-Null
 }
@@ -312,5 +343,6 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
 
 
