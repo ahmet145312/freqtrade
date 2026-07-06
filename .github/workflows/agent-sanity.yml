@@ -85,6 +85,11 @@ jobs:
       - name: Check GitHub templates
         shell: bash
         run: |
-          test -f ".github/pull_request_template.md"
+          if [ ! -f ".github/pull_request_template.md" ] && [ ! -f ".github/PULL_REQUEST_TEMPLATE.md" ]; then
+            echo "::error file=.github/PULL_REQUEST_TEMPLATE.md::Pull request template is missing"
+            exit 1
+          fi
           test -f ".github/ISSUE_TEMPLATE/strategy_experiment.yml"
           echo "GitHub templates are present."
+
+
