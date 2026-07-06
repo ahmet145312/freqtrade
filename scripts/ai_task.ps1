@@ -142,11 +142,11 @@ foreach ($folderPath in $folderInputs) {
       $fileSummaries.Add((Get-Content -Path $folderSummary -Raw)) | Out-Null
     }
 
-    if (Test-Path $folderTree -and -not $generatedFiles.Contains($folderTree)) {
+    if ((Test-Path $folderTree) -and (-not $generatedFiles.Contains($folderTree))) {
       $generatedFiles.Add($folderTree) | Out-Null
     }
 
-    if (Test-Path $folderFiles -and -not $generatedFiles.Contains($folderFiles)) {
+    if ((Test-Path $folderFiles) -and (-not $generatedFiles.Contains($folderFiles))) {
       $generatedFiles.Add($folderFiles) | Out-Null
     }
 
@@ -192,11 +192,11 @@ foreach ($webUrl in $webUrls) {
       $fileSummaries.Add((Get-Content -Path $webSummary -Raw)) | Out-Null
     }
 
-    if (Test-Path $webText -and -not $generatedFiles.Contains($webText)) {
+    if ((Test-Path $webText) -and (-not $generatedFiles.Contains($webText))) {
       $generatedFiles.Add($webText) | Out-Null
     }
 
-    if (Test-Path $webHtml -and -not $generatedFiles.Contains($webHtml)) {
+    if ((Test-Path $webHtml) -and (-not $generatedFiles.Contains($webHtml))) {
       $generatedFiles.Add($webHtml) | Out-Null
     }
 
