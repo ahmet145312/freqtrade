@@ -96,11 +96,7 @@ foreach ($youtubeUrl in $youtubeUrls) {
   $notes.Add("YouTube linki algılandı. Metadata, altyazı, temiz transcript ve video/frame hazırlığı deneniyor.") | Out-Null
 
   try {
-    if ($DownloadYouTubeVideo) {
-      powershell -ExecutionPolicy Bypass -File ".\scripts\collect_youtube.ps1" -Url $youtubeUrl -OutDir $ytDir -DownloadVideo
-    } else {
-      powershell -ExecutionPolicy Bypass -File ".\scripts\collect_youtube.ps1" -Url $youtubeUrl -OutDir $ytDir
-    }
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_youtube.ps1" -Url $youtubeUrl -OutDir $ytDir
 
     $generatedFiles.Add((Join-Path $ytDir "youtube_metadata.json")) | Out-Null
     $generatedFiles.Add((Join-Path $ytDir "youtube_info.txt")) | Out-Null
@@ -120,16 +116,10 @@ foreach ($youtubeUrl in $youtubeUrls) {
     }
 
     if ($DownloadYouTubeVideo) {
-      $video = Get-ChildItem (Join-Path $ytDir "video") -Filter "*.mp4" -ErrorAction SilentlyContinue | Select-Object -First 1
-      if ($video) {
-        $framesDir = Join-Path $ytDir "frames"
-        powershell -ExecutionPolicy Bypass -File ".\scripts\extract_video_frames.ps1" -VideoFile $video.FullName -OutDir $framesDir -EverySeconds $FrameEverySeconds
-        $generatedFiles.Add($video.FullName) | Out-Null
-        $generatedFiles.Add($framesDir) | Out-Null
-        $notes.Add("Video indirildi ve her $FrameEverySeconds saniyede bir kare çıkarıldı: $framesDir") | Out-Null
-      } else {
-        $notes.Add("Video dosyası bulunamadı; frame çıkarılamadı.") | Out-Null
-      }
+      $framesDir = Join-Path $ytDir "frames"
+      powershell -ExecutionPolicy Bypass -File ".\scripts\extract_youtube_frames_stream.ps1" -Url $youtubeUrl -OutDir $framesDir -EverySeconds $FrameEverySeconds
+      $generatedFiles.Add($framesDir) | Out-Null
+      $notes.Add("Video dosyası indirilmeden YouTube stream üzerinden her $FrameEverySeconds saniyede bir kare çıkarıldı: $framesDir") | Out-Null
     }
   } catch {
     $notes.Add("YouTube hazırlık sırasında hata: $($_.Exception.Message)") | Out-Null
@@ -322,3 +312,5 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
+
