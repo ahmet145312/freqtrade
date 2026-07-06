@@ -81,6 +81,59 @@ foreach ($m in $pathMatches) {
   }
 }
 
+
+# Genel web sayfası otomatik hazırlık
+$webUrls = @()
+foreach ($inputItem in $inputs) {
+  if ($inputItem -match "^https?://" -and $inputItem -notmatch "youtube\.com|youtu\.be") {
+    $webUrls += $inputItem
+  }
+}
+
+foreach ($webUrl in $webUrls) {
+  $webDir = Join-Path $runDir "web"
+  New-Item -ItemType Directory -Force -Path $webDir | Out-Null
+
+  $notes.Add("Web linki algılandı. Sayfa indiriliyor ve temiz metin çıkarılıyor: $webUrl") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_web_page.ps1" -Url $webUrl -OutDir $webDir
+
+    if (-not $detected.Contains("web_page")) {
+      $detected.Add("web_page") | Out-Null
+    }
+
+    $webSummary = Join-Path $webDir "web_summary.md"
+    $webText = Join-Path $webDir "web_text.txt"
+    $webHtml = Join-Path $webDir "web_page.html"
+
+    if (Test-Path $webSummary) {
+      if (-not $generatedFiles.Contains($webSummary)) {
+        $generatedFiles.Add($webSummary) | Out-Null
+      }
+
+      $fileSummaries.Add((Get-Content -Path $webSummary -Raw)) | Out-Null
+    }
+
+    if (Test-Path $webText -and -not $generatedFiles.Contains($webText)) {
+      $generatedFiles.Add($webText) | Out-Null
+    }
+
+    if (Test-Path $webHtml -and -not $generatedFiles.Contains($webHtml)) {
+      $generatedFiles.Add($webHtml) | Out-Null
+    }
+
+    if (-not $generatedFiles.Contains($webDir)) {
+      $generatedFiles.Add($webDir) | Out-Null
+    }
+
+    $detected.Add("web_page") | Out-Null
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Web sayfası hazırlık hatası: $webUrl - $errMsg") | Out-Null
+  }
+}
+
 # YouTube otomatik hazırlık
 $youtubeUrls = @()
 foreach ($inputItem in $inputs) {
@@ -343,6 +396,9 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
+
+
 
 
 
