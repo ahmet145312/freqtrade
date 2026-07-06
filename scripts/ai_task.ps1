@@ -70,9 +70,9 @@ if ($File) {
   }
 }
 
-$pathMatches = [regex]::Matches($taskText, "[A-Za-z]:\\[^\r\n`"<>|]+")
-foreach ($m in $pathMatches) {
-  $p = $m.Value.Trim()
+$quotedPathMatches = [regex]::Matches($taskText, '"([A-Za-z]:\\[^"]+)"')
+foreach ($m in $quotedPathMatches) {
+  $p = $m.Groups[1].Value.Trim()
   if (Test-Path $p) {
     $resolved = (Resolve-Path $p).Path
     if (-not $inputs.Contains($resolved)) {
@@ -81,8 +81,18 @@ foreach ($m in $pathMatches) {
   }
 }
 
+$pathMatches = [regex]::Matches($taskText, '(?i)[A-Z]:\\[^\s`"<>|]+')
+foreach ($m in $pathMatches) {
+  $p = $m.Value.Trim()
+  $p = $p.TrimEnd(".", ",", ";", ")", "]", "}")
 
-
+  if (Test-Path $p) {
+    $resolved = (Resolve-Path $p).Path
+    if (-not $inputs.Contains($resolved)) {
+      $inputs.Add($resolved) | Out-Null
+    }
+  }
+}
 # Klasör otomatik hazırlık
 $folderInputs = @()
 foreach ($inputItem in $inputs) {
@@ -462,6 +472,7 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
 
 
 
