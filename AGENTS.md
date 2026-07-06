@@ -38,3 +38,17 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Local Graphify Command
+
+On this Windows machine, Codex should prefer the absolute Graphify executable path:
+
+C:\Users\ahmet\.local\bin\graphify.exe
+
+Use these commands instead of bare graphify when possible:
+
+C:\Users\ahmet\.local\bin\graphify.exe query "strategy classes and backtest flow"
+C:\Users\ahmet\.local\bin\graphify.exe explain "LSRC5MCoreV1B"
+C:\Users\ahmet\.local\bin\graphify.exe path "LSRC5MCoreV1B" "IStrategy"
+
+If Graphify CLI fails with a uv trampoline path error, fall back to reading graphify-out/graph.json directly.
