@@ -82,6 +82,72 @@ foreach ($m in $pathMatches) {
 }
 
 
+
+# Klasör otomatik hazırlık
+$folderInputs = @()
+foreach ($inputItem in $inputs) {
+  if ($inputItem -match "^https?://") {
+    continue
+  }
+
+  if ((Test-Path $inputItem) -and ((Get-Item $inputItem).PSIsContainer)) {
+    $folderInputs += $inputItem
+  }
+}
+
+foreach ($folderPath in $folderInputs) {
+  $folderName = Split-Path $folderPath -Leaf
+  $safeFolderName = [regex]::Replace($folderName, '[^\w\.-]+', '_')
+
+  if ($safeFolderName.Length -gt 60) {
+    $safeFolderName = $safeFolderName.Substring(0, 60)
+  }
+
+  if ([string]::IsNullOrWhiteSpace($safeFolderName)) {
+    $safeFolderName = "folder"
+  }
+
+  $folderDir = Join-Path $runDir ("folder_{0}" -f $safeFolderName)
+  New-Item -ItemType Directory -Force -Path $folderDir | Out-Null
+
+  $notes.Add("Klasör algılandı. Dosya ağacı ve klasör özeti çıkarılıyor: $folderPath") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_folder.ps1" -Folder $folderPath -OutDir $folderDir
+
+    if (-not $detected.Contains("folder")) {
+      $detected.Add("folder") | Out-Null
+    }
+
+    $folderSummary = Join-Path $folderDir "folder_summary.md"
+    $folderTree = Join-Path $folderDir "folder_tree.txt"
+    $folderFiles = Join-Path $folderDir "folder_files.csv"
+
+    if (Test-Path $folderSummary) {
+      if (-not $generatedFiles.Contains($folderSummary)) {
+        $generatedFiles.Add($folderSummary) | Out-Null
+      }
+
+      $fileSummaries.Add((Get-Content -Path $folderSummary -Raw)) | Out-Null
+    }
+
+    if (Test-Path $folderTree -and -not $generatedFiles.Contains($folderTree)) {
+      $generatedFiles.Add($folderTree) | Out-Null
+    }
+
+    if (Test-Path $folderFiles -and -not $generatedFiles.Contains($folderFiles)) {
+      $generatedFiles.Add($folderFiles) | Out-Null
+    }
+
+    if (-not $generatedFiles.Contains($folderDir)) {
+      $generatedFiles.Add($folderDir) | Out-Null
+    }
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Klasör hazırlık hatası: $folderPath - $errMsg") | Out-Null
+  }
+}
+
 # Genel web sayfası otomatik hazırlık
 $webUrls = @()
 foreach ($inputItem in $inputs) {
@@ -276,7 +342,7 @@ $recommended = "ai_route"
 if ($uniqueDetected -contains "youtube" -or $uniqueDetected -contains "video_file" -or $uniqueDetected -contains "image" -or $uniqueDetected -contains "pdf" -or $uniqueDetected -contains "excel" -or $uniqueDetected -contains "csv") {
   $recommended = "gemini_or_claude"
 }
-if ($uniqueDetected -contains "code" -or $uniqueDetected -contains "github_repo_or_page") {
+if ($uniqueDetected -contains "code" -or $uniqueDetected -contains "github_repo_or_page" -or $uniqueDetected -contains "folder") {
   $recommended = "codex_or_claude"
 }
 
@@ -396,6 +462,9 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
+
+
 
 
 
