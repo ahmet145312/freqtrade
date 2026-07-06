@@ -203,8 +203,6 @@ foreach ($webUrl in $webUrls) {
     if (-not $generatedFiles.Contains($webDir)) {
       $generatedFiles.Add($webDir) | Out-Null
     }
-
-    $detected.Add("web_page") | Out-Null
   } catch {
     $errMsg = $_.Exception.Message
     $notes.Add("Web sayfası hazırlık hatası: $webUrl - $errMsg") | Out-Null
