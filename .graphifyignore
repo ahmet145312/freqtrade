@@ -1,0 +1,42 @@
+﻿# Graphify code-only mode
+
+# docs / text
+*.md
+*.mdx
+*.qmd
+*.rst
+*.txt
+*.html
+*.htm
+*.yaml
+*.yml
+
+# office / pdf
+*.pdf
+*.docx
+*.xlsx
+
+# images
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.svg
+
+# common doc folders
+docs/
+doc/
+documentation/
+site/
+wiki/
+
+# generated / heavy folders
+graphify-out/
+__pycache__/
+.venv/
+venv/
+env/
+node_modules/
+dist/
+build/
