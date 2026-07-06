@@ -78,10 +78,29 @@ if ($type -in @("text", "json", "code", "csv")) {
 }
 
 if ($type -eq "csv") {
-  $lines.Add("## CSV Notu") | Out-Null
-  $lines.Add("- İlk 120 satır eklendi.") | Out-Null
-  $lines.Add("- Büyük CSV ise tamamı cloud modele basılmamalı; önce local özet/kolon analizi yapılmalı.") | Out-Null
-  $lines.Add("") | Out-Null
+  $csvSummaryPath = Join-Path $OutDir "csv_summary.md"
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\summarize_csv.ps1" -CsvFile $item.FullName -OutFile $csvSummaryPath
+    $lines.Add("## CSV Notu") | Out-Null
+    $lines.Add("- İlk 120 satır eklendi.") | Out-Null
+    $lines.Add("- Büyük CSV'nin tamamı cloud modele basılmadı.") | Out-Null
+    $lines.Add("- Local CSV özeti üretildi: $csvSummaryPath") | Out-Null
+    $lines.Add("") | Out-Null
+
+    if (Test-Path $csvSummaryPath) {
+      $lines.Add("## CSV Local Analiz Özeti") | Out-Null
+      $lines.Add("") | Out-Null
+      Get-Content -Path $csvSummaryPath -TotalCount 220 | ForEach-Object {
+        $lines.Add($_) | Out-Null
+      }
+      $lines.Add("") | Out-Null
+    }
+  } catch {
+    $lines.Add("## CSV Notu") | Out-Null
+    $lines.Add("- CSV local özet üretilemedi: $($_.Exception.Message)") | Out-Null
+    $lines.Add("") | Out-Null
+  }
 }
 
 if ($type -eq "pdf") {
@@ -111,3 +130,4 @@ Write-Host ""
 Write-Host "FILE_COPY_PATH=$dest"
 Write-Host "FILE_SUMMARY_PATH=$summaryPath"
 Write-Host "FILE_TYPE=$type"
+
