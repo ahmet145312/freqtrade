@@ -1,0 +1,90 @@
+﻿name: Agent Sanity
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  sanity:
+    name: Agent sanity checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile tracked Python files
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          import sys
+          import py_compile
+
+          files = subprocess.check_output(["git", "ls-files", "*.py"], text=True).splitlines()
+          skip_prefixes = (".venv/", "venv/", "env/", "build/", "dist/", "graphify-out/")
+          failed = []
+
+          for path in files:
+              if path.startswith(skip_prefixes):
+                  continue
+              try:
+                  py_compile.compile(path, doraise=True)
+              except Exception as exc:
+                  failed.append((path, str(exc)))
+
+          if failed:
+              for path, err in failed:
+                  print(f"::error file={path}::{err}")
+              sys.exit(1)
+
+          print(f"Compiled {len(files)} tracked Python files.")
+          PY
+
+      - name: Check mandatory agent files
+        shell: bash
+        run: |
+          required_files=(
+            "AGENTS.md"
+            "CLAUDE.md"
+            ".continue/rules/00-agent-workflow.md"
+            ".continue/mcpServers/context7.yaml"
+            ".agent_prompts/safe_workflow.txt"
+            "scripts/copy_safe_agent_prompt.ps1"
+            "scripts/ai_route.ps1"
+            "scripts/local_repo_triage.ps1"
+            "AI_ROUTER_POLICY.md"
+          )
+
+          for f in "${required_files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "::error file=$f::Required agent workflow file is missing"
+              exit 1
+            fi
+          done
+
+          grep -q "Mandatory Agent Workflow Rules" AGENTS.md
+          grep -q "Mandatory Agent Workflow Rules" CLAUDE.md
+          grep -q "Graphify" .continue/rules/00-agent-workflow.md
+          grep -q "Context7" .continue/rules/00-agent-workflow.md
+          grep -q "AI Router" .continue/rules/00-agent-workflow.md
+          grep -q "mcp.context7.com/mcp" .continue/mcpServers/context7.yaml
+
+          echo "Agent workflow files are present."
+
+      - name: Check GitHub templates
+        shell: bash
+        run: |
+          test -f ".github/pull_request_template.md"
+          test -f ".github/ISSUE_TEMPLATE/strategy_experiment.yml"
+          echo "GitHub templates are present."

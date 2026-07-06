@@ -1,0 +1,87 @@
+﻿name: Strategy Experiment
+description: Yeni strateji, backtest fikri veya trading hipotezi için ölçülebilir kayıt.
+title: "[Strategy] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bu şablon strateji fikirlerini ölçülebilir hale getirmek için kullanılır.
+        Kural: Hipotez net değilse backtest yapılmaz.
+
+  - type: input
+    id: strategy_name
+    attributes:
+      label: Strateji / Deney adı
+      placeholder: Örn. 4H range reclaim + 5M trigger
+    validations:
+      required: true
+
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hipotez
+      description: Bu strateji neden çalışmalı?
+      placeholder: Örn. 4H likidite temizliği sonrası 5M reclaim girişleri BTCde daha iyi R/R verebilir.
+    validations:
+      required: true
+
+  - type: input
+    id: pairs
+    attributes:
+      label: Pair / Market
+      placeholder: BTCUSDT, ETHUSDT, SOLUSDT
+    validations:
+      required: true
+
+  - type: input
+    id: timeframes
+    attributes:
+      label: Timeframe
+      placeholder: 4h yön, 1h/15m/5m giriş
+    validations:
+      required: true
+
+  - type: textarea
+    id: entry_rules
+    attributes:
+      label: Entry kuralları
+      placeholder: Net giriş şartlarını yaz.
+    validations:
+      required: true
+
+  - type: textarea
+    id: exit_rules
+    attributes:
+      label: Exit / stop kuralları
+      placeholder: TP, SL, time exit, trailing, invalidation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: data_range
+    attributes:
+      label: Veri aralığı
+      placeholder: Örn. 2024-01-01 -> 2026-07-01, Binance futures, fee/slippage varsayımı.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: Beklenen sonuç / kabul kriteri
+      placeholder: Örn. Profit factor > 1.2, max drawdown < %20, trade sayısı > 100.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow_check
+    attributes:
+      label: Zorunlu workflow kontrolü
+      value: |
+        - [ ] Graphify ile repo akışı kontrol edilecek.
+        - [ ] C7 ile güncel dokümantasyon kontrol edilecek.
+        - [ ] Dosya değiştirmeden önce plan çıkarılacak.
+        - [ ] Riskli Git/GitHub işlemi öncesi açık onay alınacak.
+        - [ ] git add . kullanılmayacak.
+    validations:
+      required: true
