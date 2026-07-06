@@ -136,10 +136,31 @@ if ($type -eq "pdf") {
 }
 
 if ($type -eq "image") {
-  $lines.Add("## Görsel Notu") | Out-Null
-  $lines.Add("- Görsel kopyalandı.") | Out-Null
-  $lines.Add("- Görsel analiz için Gemini/Claude Vision tarafına dosya olarak verilmelidir.") | Out-Null
-  $lines.Add("") | Out-Null
+  $imageSummaryPath = Join-Path $OutDir "image_summary.md"
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\summarize_image.ps1" -ImageFile $item.FullName -OutFile $imageSummaryPath
+
+    $lines.Add("## Görsel Notu") | Out-Null
+    $lines.Add("- Görsel kopyalandı.") | Out-Null
+    $lines.Add("- Görsel teknik özeti çıkarıldı: $imageSummaryPath") | Out-Null
+    $lines.Add("- Görsel içerik yorumu için Gemini/Claude Vision tarafına dosya olarak verilmelidir.") | Out-Null
+    $lines.Add("") | Out-Null
+
+    if (Test-Path $imageSummaryPath) {
+      $lines.Add("## Görsel Local Analiz Özeti") | Out-Null
+      $lines.Add("") | Out-Null
+      Get-Content -Path $imageSummaryPath -TotalCount 120 | ForEach-Object {
+        $lines.Add($_) | Out-Null
+      }
+      $lines.Add("") | Out-Null
+    }
+  } catch {
+    $lines.Add("## Görsel Notu") | Out-Null
+    $lines.Add("- Görsel teknik özeti üretilemedi: $($_.Exception.Message)") | Out-Null
+    $lines.Add("- Görsel analiz için Gemini/Claude Vision tarafına dosya olarak verilmelidir.") | Out-Null
+    $lines.Add("") | Out-Null
+  }
 }
 
 $lines | Set-Content -Path $summaryPath -Encoding UTF8
@@ -154,5 +175,6 @@ Write-Host ""
 Write-Host "FILE_COPY_PATH=$dest"
 Write-Host "FILE_SUMMARY_PATH=$summaryPath"
 Write-Host "FILE_TYPE=$type"
+
 
 
