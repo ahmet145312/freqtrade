@@ -32,3 +32,12 @@ For every coding, debugging, setup, backtest, strategy, data, or repository task
    - If the user asks for implementation, first produce a short plan.
    - If the user says "dosya değiştirme", do not read/write/patch files unless explicitly allowed.
    - If there are many untracked files, do not touch unrelated files.
+
+## AI Router
+
+For ambiguous tasks, prefer this routing policy:
+- Shell + Graphify: repo-local flow and zero-token analysis.
+- Ollama: local low-cost summaries and small analysis.
+- Codex: implementation, tests, CI, and file changes.
+- Claude: review, hard bugs, architecture, lookahead bias, and risk checks.
+- Gemini: long context, large reports, and research.

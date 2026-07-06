@@ -123,3 +123,18 @@ For every coding, debugging, setup, backtest, strategy, data, or repository task
    - If the user asks for implementation, first produce a short plan.
    - If the user says "dosya değiştirme", do not read/write/patch files unless explicitly allowed.
    - If there are many untracked files, do not touch unrelated files.
+
+## AI Router Rule
+
+Before starting a new ambiguous task, use the local routing helper when possible:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\ai_route.ps1 "<task>"
+```
+
+Routing policy:
+- Shell + Graphify first for repo flow and zero-token local analysis.
+- Ollama for local low-cost summaries and small analysis.
+- Codex for implementation, tests, CI, and file changes.
+- Claude for review, hard bugs, architecture, lookahead bias, and risk checks.
+- Gemini for long context, large reports, and research.
