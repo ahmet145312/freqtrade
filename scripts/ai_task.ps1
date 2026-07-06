@@ -82,6 +82,48 @@ foreach ($m in $pathMatches) {
   }
 }
 
+
+# Genel web sayfası otomatik hazırlık
+$webUrls = @()
+foreach ($inputItem in $inputs) {
+  if ($inputItem -match "^https?://" -and $inputItem -notmatch "youtube\.com|youtu\.be") {
+    $webUrls += $inputItem
+  }
+}
+
+foreach ($webUrl in $webUrls) {
+  $webDir = Join-Path $runDir "web"
+  New-Item -ItemType Directory -Force -Path $webDir | Out-Null
+
+  $notes.Add("Web linki algılandı. Sayfa indiriliyor ve temiz metin çıkarılıyor: $webUrl") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_web_page.ps1" -Url $webUrl -OutDir $webDir
+
+    $webSummary = Join-Path $webDir "web_summary.md"
+    $webText = Join-Path $webDir "web_text.txt"
+    $webHtml = Join-Path $webDir "web_page.html"
+
+    if (Test-Path $webSummary) {
+      $generatedFiles.Add($webSummary) | Out-Null
+      $fileSummaries.Add((Get-Content -Path $webSummary -Raw)) | Out-Null
+    }
+
+    if (Test-Path $webText) {
+      $generatedFiles.Add($webText) | Out-Null
+    }
+
+    if (Test-Path $webHtml) {
+      $generatedFiles.Add($webHtml) | Out-Null
+    }
+
+    $detected.Add("web_page") | Out-Null
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Web sayfası hazırlık hatası: $webUrl - $errMsg") | Out-Null
+  }
+}
+
 # YouTube otomatik hazırlık
 $youtubeUrls = @()
 foreach ($inputItem in $inputs) {
@@ -262,6 +304,48 @@ foreach ($m in $pathMatches) {
     if (-not $inputs.Contains($resolved)) {
       $inputs.Add($resolved) | Out-Null
     }
+  }
+}
+
+
+# Genel web sayfası otomatik hazırlık
+$webUrls = @()
+foreach ($inputItem in $inputs) {
+  if ($inputItem -match "^https?://" -and $inputItem -notmatch "youtube\.com|youtu\.be") {
+    $webUrls += $inputItem
+  }
+}
+
+foreach ($webUrl in $webUrls) {
+  $webDir = Join-Path $runDir "web"
+  New-Item -ItemType Directory -Force -Path $webDir | Out-Null
+
+  $notes.Add("Web linki algılandı. Sayfa indiriliyor ve temiz metin çıkarılıyor: $webUrl") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_web_page.ps1" -Url $webUrl -OutDir $webDir
+
+    $webSummary = Join-Path $webDir "web_summary.md"
+    $webText = Join-Path $webDir "web_text.txt"
+    $webHtml = Join-Path $webDir "web_page.html"
+
+    if (Test-Path $webSummary) {
+      $generatedFiles.Add($webSummary) | Out-Null
+      $fileSummaries.Add((Get-Content -Path $webSummary -Raw)) | Out-Null
+    }
+
+    if (Test-Path $webText) {
+      $generatedFiles.Add($webText) | Out-Null
+    }
+
+    if (Test-Path $webHtml) {
+      $generatedFiles.Add($webHtml) | Out-Null
+    }
+
+    $detected.Add("web_page") | Out-Null
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Web sayfası hazırlık hatası: $webUrl - $errMsg") | Out-Null
   }
 }
 
@@ -632,6 +716,7 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
 
 
 
