@@ -104,11 +104,35 @@ if ($type -eq "csv") {
 }
 
 if ($type -eq "pdf") {
-  $lines.Add("## PDF Notu") | Out-Null
-  $lines.Add("- PDF kopyalandı.") | Out-Null
-  $lines.Add("- İçerik görsel/tablo içeriyorsa Gemini/Claude tarafında dosya olarak ayrıca verilmelidir.") | Out-Null
-  $lines.Add("- Sonraki aşamada PDF metin çıkarma modülü eklenecek.") | Out-Null
-  $lines.Add("") | Out-Null
+  $pdfExtractDir = $OutDir
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\extract_pdf_text.ps1" -PdfFile $item.FullName -OutDir $pdfExtractDir
+
+    $pdfSummaryPath = Join-Path $pdfExtractDir "pdf_summary.md"
+    $pdfTextPath = Join-Path $pdfExtractDir "pdf_text.txt"
+
+    $lines.Add("## PDF Notu") | Out-Null
+    $lines.Add("- PDF kopyalandı.") | Out-Null
+    $lines.Add("- PDF metni local olarak çıkarıldı.") | Out-Null
+    $lines.Add("- PDF özet dosyası: $pdfSummaryPath") | Out-Null
+    $lines.Add("- PDF metin dosyası: $pdfTextPath") | Out-Null
+    $lines.Add("") | Out-Null
+
+    if (Test-Path $pdfSummaryPath) {
+      $lines.Add("## PDF Local Analiz Özeti") | Out-Null
+      $lines.Add("") | Out-Null
+      Get-Content -Path $pdfSummaryPath -TotalCount 220 | ForEach-Object {
+        $lines.Add($_) | Out-Null
+      }
+      $lines.Add("") | Out-Null
+    }
+  } catch {
+    $lines.Add("## PDF Notu") | Out-Null
+    $lines.Add("- PDF metin çıkarma başarısız: $($_.Exception.Message)") | Out-Null
+    $lines.Add("- PDF görsel/tarama ise Gemini/Claude Vision ile dosya olarak analiz edilmeli.") | Out-Null
+    $lines.Add("") | Out-Null
+  }
 }
 
 if ($type -eq "image") {
@@ -130,4 +154,5 @@ Write-Host ""
 Write-Host "FILE_COPY_PATH=$dest"
 Write-Host "FILE_SUMMARY_PATH=$summaryPath"
 Write-Host "FILE_TYPE=$type"
+
 

@@ -157,6 +157,10 @@ foreach ($inputItem in $inputs) {
       $generatedFiles.Add($copiedFile) | Out-Null
     }
 
+    Get-ChildItem -Path $localDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+      $generatedFiles.Add($_.FullName) | Out-Null
+    }
+
     switch ($ext) {
       ".pdf"  { $detected.Add("pdf") | Out-Null }
       ".csv"  { $detected.Add("csv") | Out-Null }
@@ -628,6 +632,7 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
 
 
 
