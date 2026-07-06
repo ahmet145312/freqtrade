@@ -30,8 +30,9 @@ Write-Host "[frames] Çıktı:"
 Write-Host $OutDir
 Write-Host "[frames] Her $EverySeconds saniyede 1 kare çıkarılıyor..."
 
-ffmpeg -y -i $VideoFile -vf $vf -q:v 3 $pattern
+ffmpeg -hide_banner -loglevel warning -y -i $VideoFile -vf $vf -q:v 3 $pattern
 
 Write-Host ""
 Write-Host "[frames] Kare çıkarma bitti."
 Get-ChildItem $OutDir -Filter "*.jpg" | Select-Object Name,Length,LastWriteTime
+

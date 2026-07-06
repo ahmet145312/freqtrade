@@ -6,10 +6,19 @@
 
   [switch]$PrepareOnly,
 
-  [switch]$NoClipboard
+  [switch]$NoClipboard,
+
+  [switch]$DownloadYouTubeVideo = $true,
+
+  [int]$FrameEverySeconds = 10
 )
 
 $ErrorActionPreference = "Stop"
+
+try {
+  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+  $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {}
 
 $repo = "C:\Users\ahmet\freqtrade"
 Set-Location $repo
@@ -31,6 +40,7 @@ New-Item -ItemType Directory -Force $runDir | Out-Null
 $detected = New-Object System.Collections.Generic.List[string]
 $notes = New-Object System.Collections.Generic.List[string]
 $inputs = New-Object System.Collections.Generic.List[string]
+$generatedFiles = New-Object System.Collections.Generic.List[string]
 
 $urlMatches = [regex]::Matches($taskText, "https?://\S+")
 foreach ($m in $urlMatches) {
@@ -68,6 +78,61 @@ foreach ($m in $pathMatches) {
     if (-not $inputs.Contains($resolved)) {
       $inputs.Add($resolved) | Out-Null
     }
+  }
+}
+
+# YouTube otomatik hazırlık
+$youtubeUrls = @()
+foreach ($inputItem in $inputs) {
+  if ($inputItem -match "^https?://" -and $inputItem -match "youtube\.com|youtu\.be") {
+    $youtubeUrls += $inputItem
+  }
+}
+
+foreach ($youtubeUrl in $youtubeUrls) {
+  $ytDir = Join-Path $runDir "youtube"
+  New-Item -ItemType Directory -Force $ytDir | Out-Null
+
+  $notes.Add("YouTube linki algılandı. Metadata, altyazı, temiz transcript ve video/frame hazırlığı deneniyor.") | Out-Null
+
+  try {
+    if ($DownloadYouTubeVideo) {
+      powershell -ExecutionPolicy Bypass -File ".\scripts\collect_youtube.ps1" -Url $youtubeUrl -OutDir $ytDir -DownloadVideo
+    } else {
+      powershell -ExecutionPolicy Bypass -File ".\scripts\collect_youtube.ps1" -Url $youtubeUrl -OutDir $ytDir
+    }
+
+    $generatedFiles.Add((Join-Path $ytDir "youtube_metadata.json")) | Out-Null
+    $generatedFiles.Add((Join-Path $ytDir "youtube_info.txt")) | Out-Null
+
+    $vtt = Get-ChildItem (Join-Path $ytDir "subtitles") -Filter "*.tr.vtt" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $vtt) {
+      $vtt = Get-ChildItem (Join-Path $ytDir "subtitles") -Filter "*.vtt" -ErrorAction SilentlyContinue | Select-Object -First 1
+    }
+
+    if ($vtt) {
+      $cleanTranscript = Join-Path $ytDir "transcript_clean.txt"
+      powershell -ExecutionPolicy Bypass -File ".\scripts\clean_vtt_transcript.ps1" -VttFile $vtt.FullName -OutFile $cleanTranscript
+      $generatedFiles.Add($cleanTranscript) | Out-Null
+      $notes.Add("YouTube transcript temizlendi: $cleanTranscript") | Out-Null
+    } else {
+      $notes.Add("YouTube altyazı bulunamadı veya indirilemedi.") | Out-Null
+    }
+
+    if ($DownloadYouTubeVideo) {
+      $video = Get-ChildItem (Join-Path $ytDir "video") -Filter "*.mp4" -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($video) {
+        $framesDir = Join-Path $ytDir "frames"
+        powershell -ExecutionPolicy Bypass -File ".\scripts\extract_video_frames.ps1" -VideoFile $video.FullName -OutDir $framesDir -EverySeconds $FrameEverySeconds
+        $generatedFiles.Add($video.FullName) | Out-Null
+        $generatedFiles.Add($framesDir) | Out-Null
+        $notes.Add("Video indirildi ve her $FrameEverySeconds saniyede bir kare çıkarıldı: $framesDir") | Out-Null
+      } else {
+        $notes.Add("Video dosyası bulunamadı; frame çıkarılamadı.") | Out-Null
+      }
+    }
+  } catch {
+    $notes.Add("YouTube hazırlık sırasında hata: $($_.Exception.Message)") | Out-Null
   }
 }
 
@@ -148,6 +213,16 @@ $inputList = if ($inputs.Count -gt 0) { ($inputs -join "`n") } else { "Yok" }
 $typeList = ($uniqueDetected -join ", ")
 $noteList = if ($notes.Count -gt 0) { ($notes -join "`n") } else { "Yok" }
 $fileSummaryText = if ($fileSummaries.Count -gt 0) { ($fileSummaries -join "`n---`n") } else { "Yok" }
+$generatedList = if ($generatedFiles.Count -gt 0) { (($generatedFiles | Select-Object -Unique) -join "`n") } else { "Yok" }
+
+$youtubeTranscriptText = "Yok"
+$cleanTranscriptFiles = $generatedFiles | Where-Object { $_ -match "transcript_clean\.txt$" }
+if ($cleanTranscriptFiles) {
+  $firstTranscript = $cleanTranscriptFiles | Select-Object -First 1
+  if (Test-Path $firstTranscript) {
+    $youtubeTranscriptText = Get-Content $firstTranscript -Raw
+  }
+}
 
 $packet = @"
 # AI Görev Paketi
@@ -168,6 +243,14 @@ $typeList
 
 $inputList
 
+## Üretilen dosyalar / klasörler
+
+$generatedList
+
+## YouTube temiz transcript
+
+$youtubeTranscriptText
+
 ## Dosya özetleri
 
 $fileSummaryText
@@ -181,7 +264,8 @@ $noteList
 - Önce lokal çıkarım kullan.
 - Büyük dosyayı direkt cloud modele basma.
 - Gerekirse parçala.
-- Belirsiz noktaları ayrı yaz.
+- Video/görsel analizinde kesin görülenleri ve tahminleri ayrı yaz.
+- Trading/strateji konusu varsa uygulanabilir kurallara çevir.
 - Kod/dosya değişikliği gerekiyorsa önce plan çıkar.
 - Git işlemi gerekiyorsa açık onay iste.
 - `git add .` kullanma.
@@ -196,6 +280,7 @@ Amaç:
 - Verilen girdinin türünü doğru değerlendir.
 - Kullanıcının istediği son ürünü çıkar.
 - Dosya/video/görsel/web/PDF/CSV içeriğinde kesin görülenleri ve belirsiz kalanları ayrı yaz.
+- YouTube/videosu varsa transcript ve frame klasörünü birlikte değerlendir.
 - Trading/strateji konusu varsa uygulanabilir kurallara çevir.
 - Kod/repo konusu varsa önce plan çıkar, doğrudan dosya değiştirme.
 - Büyük veri varsa özetle, karar tablosu üret.
@@ -212,6 +297,9 @@ $typeList
 
 Girdiler:
 $inputList
+
+Üretilen dosyalar / klasörler:
+$generatedList
 
 Önerilen yön:
 $recommended

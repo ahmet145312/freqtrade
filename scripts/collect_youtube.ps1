@@ -21,6 +21,7 @@ $metadataPath = Join-Path $OutDir "youtube_metadata.json"
 $infoPath = Join-Path $OutDir "youtube_info.txt"
 $subsDir = Join-Path $OutDir "subtitles"
 $videoDir = Join-Path $OutDir "video"
+$logPath = Join-Path $OutDir "youtube_collect.log"
 
 New-Item -ItemType Directory -Force $subsDir | Out-Null
 New-Item -ItemType Directory -Force $videoDir | Out-Null
@@ -32,19 +33,30 @@ yt-dlp --dump-json --skip-download $Url | Set-Content -Path $metadataPath -Encod
 Write-Host "[youtube] Basit bilgi alınıyor..."
 yt-dlp --skip-download --print "title=%(title)s" --print "channel=%(channel)s" --print "duration=%(duration_string)s" --print "upload_date=%(upload_date)s" --print "webpage_url=%(webpage_url)s" $Url | Set-Content -Path $infoPath -Encoding UTF8
 
-Write-Host "[youtube] Altyazı/transcript deneniyor..."
+Write-Host "[youtube] Türkçe altyazı/transcript deneniyor..."
 Push-Location $subsDir
 try {
-  yt-dlp `
+  $oldEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+
+  & yt-dlp `
     --skip-download `
     --write-subs `
     --write-auto-subs `
-    --sub-langs "tr,en,tr.*,en.*" `
+    --sub-langs "tr,tr-orig,tr.*" `
     --sub-format "vtt" `
     -o "subtitle_%(id)s.%(ext)s" `
-    $Url
+    $Url 2>&1 | Tee-Object -FilePath $logPath -Append
+
+  $ErrorActionPreference = $oldEap
+
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "[youtube] Altyazı komutu hata kodu döndürdü ama akış durdurulmadı: $LASTEXITCODE"
+  }
 } catch {
+  $ErrorActionPreference = $oldEap
   Write-Host "[youtube] Altyazı bulunamadı veya indirilemedi. Devam ediliyor."
+  Write-Host $_.Exception.Message
 }
 Pop-Location
 

@@ -102,7 +102,13 @@ if ($needsTaskPrep -and (Test-Path ".\scripts\ai_task.ps1")) {
   Write-Host "Girdi/link/dosya algılandı. AI görev paketi hazırlanıyor..."
   Write-Host ""
 
+  $oldEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+
   $prepOut = powershell -ExecutionPolicy Bypass -File ".\scripts\ai_task.ps1" $Task -PrepareOnly -NoClipboard 2>&1
+
+  $ErrorActionPreference = $oldEap
+
   $prepOut | Tee-Object -FilePath ".agent_prompts\last_ai_task.txt"
 
   $promptLine = ($prepOut | Select-String -Pattern "^AI_PROMPT_PATH=" | Select-Object -First 1).Line
@@ -272,3 +278,4 @@ Write-Host "Son router çıktısı: .agent_prompts\last_ai_route.txt"
 if (Test-Path ".agent_prompts\last_ai_task.txt") {
   Write-Host "Son görev paketi çıktısı: .agent_prompts\last_ai_task.txt"
 }
+
