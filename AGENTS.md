@@ -76,3 +76,20 @@ Not allowed without explicit user approval:
 - Modify secrets or deployments
 
 If the user asks for a GitHub write action, first summarize the exact action and wait for clear approval.
+
+## Context7 / C7 Rule
+
+When the user says "C7 ile başla", first use Context7 to check current documentation before giving code, commands, or setup advice.
+
+Use Context7 first for:
+- Library or framework API usage
+- Package installation and configuration
+- Freqtrade documentation questions
+- Pandas, NumPy, TA-Lib, Plotly, CCXT, SQLAlchemy, FastAPI, Playwright, Docker, GitHub CLI, MCP, or Codex setup
+- Any answer that depends on current package behavior or docs
+
+Do not use Context7 for pure local repo analysis. For local code structure, dependency paths, strategy classes, or backtest flow, use Graphify first.
+
+Shortcut:
+- C7 = Context7
+- "C7 ile başla" = fetch current docs with Context7 first
