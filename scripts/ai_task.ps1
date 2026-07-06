@@ -83,6 +83,48 @@ foreach ($m in $pathMatches) {
 }
 
 
+
+# Klasör otomatik hazırlık
+$folderInputs = @()
+foreach ($inputItem in $inputs) {
+  if ((Test-Path $inputItem) -and ((Get-Item $inputItem).PSIsContainer)) {
+    $folderInputs += $inputItem
+  }
+}
+
+foreach ($folderPath in $folderInputs) {
+  $folderDir = Join-Path $runDir "folder"
+  New-Item -ItemType Directory -Force -Path $folderDir | Out-Null
+
+  $notes.Add("Klasör algılandı. Dosya ağacı ve klasör özeti çıkarılıyor: $folderPath") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_folder.ps1" -Folder $folderPath -OutDir $folderDir
+
+    $folderSummary = Join-Path $folderDir "folder_summary.md"
+    $folderTree = Join-Path $folderDir "folder_tree.txt"
+    $folderFiles = Join-Path $folderDir "folder_files.csv"
+
+    if (Test-Path $folderSummary) {
+      $generatedFiles.Add($folderSummary) | Out-Null
+      $fileSummaries.Add((Get-Content -Path $folderSummary -Raw)) | Out-Null
+    }
+
+    if (Test-Path $folderTree) {
+      $generatedFiles.Add($folderTree) | Out-Null
+    }
+
+    if (Test-Path $folderFiles) {
+      $generatedFiles.Add($folderFiles) | Out-Null
+    }
+
+    $detected.Add("folder") | Out-Null
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Klasör hazırlık hatası: $folderPath - $errMsg") | Out-Null
+  }
+}
+
 # Genel web sayfası otomatik hazırlık
 $webUrls = @()
 foreach ($inputItem in $inputs) {
@@ -307,6 +349,48 @@ foreach ($m in $pathMatches) {
   }
 }
 
+
+
+# Klasör otomatik hazırlık
+$folderInputs = @()
+foreach ($inputItem in $inputs) {
+  if ((Test-Path $inputItem) -and ((Get-Item $inputItem).PSIsContainer)) {
+    $folderInputs += $inputItem
+  }
+}
+
+foreach ($folderPath in $folderInputs) {
+  $folderDir = Join-Path $runDir "folder"
+  New-Item -ItemType Directory -Force -Path $folderDir | Out-Null
+
+  $notes.Add("Klasör algılandı. Dosya ağacı ve klasör özeti çıkarılıyor: $folderPath") | Out-Null
+
+  try {
+    powershell -ExecutionPolicy Bypass -File ".\scripts\collect_folder.ps1" -Folder $folderPath -OutDir $folderDir
+
+    $folderSummary = Join-Path $folderDir "folder_summary.md"
+    $folderTree = Join-Path $folderDir "folder_tree.txt"
+    $folderFiles = Join-Path $folderDir "folder_files.csv"
+
+    if (Test-Path $folderSummary) {
+      $generatedFiles.Add($folderSummary) | Out-Null
+      $fileSummaries.Add((Get-Content -Path $folderSummary -Raw)) | Out-Null
+    }
+
+    if (Test-Path $folderTree) {
+      $generatedFiles.Add($folderTree) | Out-Null
+    }
+
+    if (Test-Path $folderFiles) {
+      $generatedFiles.Add($folderFiles) | Out-Null
+    }
+
+    $detected.Add("folder") | Out-Null
+  } catch {
+    $errMsg = $_.Exception.Message
+    $notes.Add("Klasör hazırlık hatası: $folderPath - $errMsg") | Out-Null
+  }
+}
 
 # Genel web sayfası otomatik hazırlık
 $webUrls = @()
@@ -716,6 +800,7 @@ if (-not $PrepareOnly) {
   Write-Host ""
   Write-Host "Prompt clipboard'a kopyalandı."
 }
+
 
 
 
