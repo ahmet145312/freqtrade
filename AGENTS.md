@@ -52,3 +52,27 @@ C:\Users\ahmet\.local\bin\graphify.exe explain "LSRC5MCoreV1B"
 C:\Users\ahmet\.local\bin\graphify.exe path "LSRC5MCoreV1B" "IStrategy"
 
 If Graphify CLI fails with a uv trampoline path error, fall back to reading graphify-out/graph.json directly.
+
+## GitHub MCP Safety Rules
+
+GitHub MCP is available for this repo, but write actions require explicit user approval.
+
+Allowed without extra approval:
+- Read repository metadata
+- List branches
+- Read commits
+- Read issues and pull requests
+- Read workflow run status
+
+Not allowed without explicit user approval:
+- Create or edit issues
+- Create or edit pull requests
+- Add comments
+- Trigger workflows
+- Push branches
+- Merge pull requests
+- Delete branches
+- Change repository settings
+- Modify secrets or deployments
+
+If the user asks for a GitHub write action, first summarize the exact action and wait for clear approval.
