@@ -1,0 +1,5 @@
+﻿Graphify ile repo akışını kontrol et.
+C7 ile güncel dokümantasyonu kontrol et.
+Dosya değiştirmeden önce plan çıkar.
+Riskli Git/GitHub işlemi yapmadan açık onay iste.
+Sadece hedef dosyalara dokun. git add . kullanma.
